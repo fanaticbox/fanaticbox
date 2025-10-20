@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FanaticBox - Personaliza tu Caja Sorpresa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .team-card {
+            transition: all 0.3s ease;
+        }
+        .team-card:hover {
+            transform: translateY(-2px);
+        }
+        .blocked {
+            opacity: 0.5;
+            filter: grayscale(100%);
+        }
+        .blocked::after {
+            content: '🚫';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 min-h-full">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">⚽ FanaticBox</h1>
+            <p class="text-xl text-white/90 mb-4">Cajas Sorpresa de Camisetas de Fútbol Boliviano</p>
+            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 max-w-2xl mx-auto">
+                <h2 class="text-2xl font-semibold text-white mb-2">🚫 Veta Hasta 3 Equipos</h2>
+                <p class="text-white/90">Haz clic en máximo 3 equipos que NO quieres que aparezcan en tu caja sorpresa</p>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-white" id="totalTeams">76</div>
+                <div class="text-white/80">Equipos Totales</div>
+            </div>
+            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-red-300" id="blockedCount">0/3</div>
+                <div class="text-white/80">Equipos Vetados</div>
+            </div>
+            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-green-300" id="availableCount">76</div>
+                <div class="text-white/80">Equipos Disponibles</div>
+            </div>
+        </div>
+
+        <!-- Teams Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8" id="teamsGrid">
+            <!-- Teams will be populated by JavaScript -->
+        </div>
+
+
+
+        <!-- Order Section -->
+        <div class="bg-white/20 backdrop-blur-sm rounded-lg p-6 max-w-md mx-auto text-center">
+            <h3 class="text-2xl font-bold text-white mb-4">🎁 Ordena tu Caja</h3>
+            <button onclick="orderBox()" class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105">
+                🛒 Ordenar Mi Caja Personalizada
+            </button>
+        </div>
+
+        <!-- Modal for blocked teams -->
+        <div id="blockedModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-md mx-4 max-h-96 overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">🚫 Equipos Bloqueados</h3>
+                <div id="blockedList" class="space-y-2 mb-4"></div>
+                <button onclick="closeModal()" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-md mx-4 text-center">
+                <div class="text-6xl mb-4">🎉</div>
+                <h3 class="text-2xl font-bold mb-2 text-gray-800">¡Pedido Confirmado!</h3>
+                <p class="text-gray-600 mb-4">Tu caja personalizada está en camino. Recibirás un email de confirmación pronto.</p>
+                <button onclick="closeSuccessModal()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded">
+                    ¡Genial!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const teams = [
+            // España
+            { name: 'Barcelona', colors: 'from-blue-600 to-red-600', emoji: '🔵🔴', country: '🇪🇸' },
+            { name: 'Real Madrid', colors: 'from-white to-purple-200', emoji: '⚪👑', country: '🇪🇸' },
+            { name: 'Atletico Madrid', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇪🇸' },
+            { name: 'Sevilla', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇪🇸' },
+            { name: 'Valencia', colors: 'from-orange-500 to-black', emoji: '🟠⚫', country: '🇪🇸' },
+            { name: 'Villarreal', colors: 'from-yellow-400 to-yellow-600', emoji: '🟡🟡', country: '🇪🇸' },
+            { name: 'Athletic Bilbao', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇪🇸' },
+            
+            // Inglaterra
+            { name: 'Manchester United', colors: 'from-red-600 to-red-800', emoji: '🔴😈', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { name: 'Liverpool', colors: 'from-red-500 to-red-700', emoji: '🔴🐦', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { name: 'Chelsea', colors: 'from-blue-500 to-blue-700', emoji: '🔵🦁', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { name: 'Arsenal', colors: 'from-red-500 to-yellow-400', emoji: '🔴🟡', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { name: 'Manchester City', colors: 'from-sky-400 to-sky-600', emoji: '🔵⭐', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { name: 'Tottenham', colors: 'from-white to-blue-800', emoji: '⚪🔵', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { name: 'Newcastle', colors: 'from-black to-white', emoji: '⚫⚪', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { name: 'West Ham', colors: 'from-red-800 to-blue-800', emoji: '🔴🔵', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            
+            // Italia
+            { name: 'Juventus', colors: 'from-black to-white', emoji: '⚫⚪', country: '🇮🇹' },
+            { name: 'AC Milan', colors: 'from-red-600 to-black', emoji: '🔴⚫', country: '🇮🇹' },
+            { name: 'Inter Milan', colors: 'from-blue-800 to-black', emoji: '🔵⚫', country: '🇮🇹' },
+            { name: 'Napoli', colors: 'from-sky-400 to-sky-600', emoji: '🔵⚡', country: '🇮🇹' },
+            { name: 'AS Roma', colors: 'from-red-700 to-yellow-600', emoji: '🔴🟡', country: '🇮🇹' },
+            { name: 'Lazio', colors: 'from-sky-400 to-white', emoji: '🔵⚪', country: '🇮🇹' },
+            { name: 'Atalanta', colors: 'from-blue-600 to-black', emoji: '🔵⚫', country: '🇮🇹' },
+            
+            // Francia
+            { name: 'PSG', colors: 'from-blue-800 to-red-600', emoji: '🔵🔴', country: '🇫🇷' },
+            { name: 'Marseille', colors: 'from-sky-400 to-white', emoji: '🔵⚪', country: '🇫🇷' },
+            { name: 'Lyon', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇫🇷' },
+            { name: 'Monaco', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇫🇷' },
+            
+            // Alemania
+            { name: 'Bayern Munich', colors: 'from-red-600 to-red-800', emoji: '🔴⚪', country: '🇩🇪' },
+            { name: 'Borussia Dortmund', colors: 'from-yellow-400 to-black', emoji: '🟡⚫', country: '🇩🇪' },
+            { name: 'RB Leipzig', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇩🇪' },
+            { name: 'Bayer Leverkusen', colors: 'from-red-600 to-black', emoji: '🔴⚫', country: '🇩🇪' },
+            
+            // Holanda
+            { name: 'Ajax', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇳🇱' },
+            { name: 'PSV', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇳🇱' },
+            { name: 'Feyenoord', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇳🇱' },
+            
+            // Portugal
+            { name: 'Porto', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇵🇹' },
+            { name: 'Benfica', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇵🇹' },
+            { name: 'Sporting CP', colors: 'from-green-600 to-white', emoji: '🟢⚪', country: '🇵🇹' },
+            
+            // Brasil
+            { name: 'Flamengo', colors: 'from-red-600 to-black', emoji: '🔴⚫', country: '🇧🇷' },
+            { name: 'Palmeiras', colors: 'from-green-600 to-white', emoji: '🟢⚪', country: '🇧🇷' },
+            { name: 'Corinthians', colors: 'from-black to-white', emoji: '⚫⚪', country: '🇧🇷' },
+            { name: 'Santos', colors: 'from-black to-white', emoji: '⚫⚪', country: '🇧🇷' },
+            { name: 'São Paulo', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇧🇷' },
+            
+            // Argentina
+            { name: 'Boca Juniors', colors: 'from-blue-600 to-yellow-400', emoji: '🔵🟡', country: '🇦🇷' },
+            { name: 'River Plate', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇦🇷' },
+            { name: 'Racing', colors: 'from-sky-400 to-white', emoji: '🔵⚪', country: '🇦🇷' },
+            { name: 'Independiente', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇦🇷' },
+            
+            // México
+            { name: 'Club América', colors: 'from-yellow-400 to-blue-600', emoji: '🟡🔵', country: '🇲🇽' },
+            { name: 'Chivas', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇲🇽' },
+            { name: 'Cruz Azul', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇲🇽' },
+            { name: 'Pumas', colors: 'from-yellow-600 to-blue-800', emoji: '🟡🔵', country: '🇲🇽' },
+            
+            // Colombia
+            { name: 'Millonarios', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇨🇴' },
+            { name: 'Nacional', colors: 'from-green-600 to-white', emoji: '🟢⚪', country: '🇨🇴' },
+            { name: 'Santa Fe', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇨🇴' },
+            
+            // Chile
+            { name: 'Colo-Colo', colors: 'from-black to-white', emoji: '⚫⚪', country: '🇨🇱' },
+            { name: 'Universidad de Chile', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇨🇱' },
+            { name: 'Universidad Católica', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇨🇱' },
+            
+            // Otros países
+            { name: 'Celtic', colors: 'from-green-600 to-white', emoji: '🟢⚪', country: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { name: 'Rangers', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { name: 'Galatasaray', colors: 'from-red-600 to-yellow-400', emoji: '🔴🟡', country: '🇹🇷' },
+            { name: 'Fenerbahçe', colors: 'from-yellow-400 to-blue-600', emoji: '🟡🔵', country: '🇹🇷' },
+            { name: 'Olympiacos', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇬🇷' },
+            { name: 'Shakhtar Donetsk', colors: 'from-orange-500 to-black', emoji: '🟠⚫', country: '🇺🇦' },
+
+            // Primera División de Bolivia
+            { name: 'Bolívar', colors: 'from-sky-400 to-white', emoji: '🔵⚪', country: '🇧🇴' },
+            { name: 'The Strongest', colors: 'from-yellow-400 to-black', emoji: '🟡⚫', country: '🇧🇴' },
+            { name: 'Jorge Wilstermann', colors: 'from-red-600 to-blue-600', emoji: '🔴🔵', country: '🇧🇴' },
+            { name: 'Oriente Petrolero', colors: 'from-green-600 to-white', emoji: '🟢⚪', country: '🇧🇴' },
+            { name: 'Blooming', colors: 'from-sky-400 to-white', emoji: '🔵⚪', country: '🇧🇴' },
+            { name: 'Always Ready', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇧🇴' },
+            { name: 'Universitario', colors: 'from-red-600 to-white', emoji: '🔴⚪', country: '🇧🇴' },
+            { name: 'Nacional Potosí', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇧🇴' },
+            { name: 'Real Tomayapo', colors: 'from-blue-600 to-red-600', emoji: '🔵🔴', country: '🇧🇴' },
+            { name: 'Guabirá', colors: 'from-green-600 to-white', emoji: '🟢⚪', country: '🇧🇴' },
+            { name: 'Independiente Petrolero', colors: 'from-red-600 to-black', emoji: '🔴⚫', country: '🇧🇴' },
+            { name: 'Aurora', colors: 'from-sky-400 to-white', emoji: '🔵⚪', country: '🇧🇴' },
+            { name: 'Real Santa Cruz', colors: 'from-white to-blue-600', emoji: '⚪🔵', country: '🇧🇴' },
+            { name: 'San Antonio Bulo Bulo', colors: 'from-green-600 to-yellow-400', emoji: '🟢🟡', country: '🇧🇴' },
+            { name: 'GV San José', colors: 'from-blue-600 to-white', emoji: '🔵⚪', country: '🇧🇴' },
+            { name: 'FC Universitario', colors: 'from-red-600 to-blue-600', emoji: '🔴🔵', country: '🇧🇴' }
+        ];
+
+        let blockedTeams = new Set();
+        const MAX_BLOCKS = 3;
+
+        function renderTeams() {
+            const grid = document.getElementById('teamsGrid');
+            grid.innerHTML = '';
+
+            teams.forEach((team, index) => {
+                const isBlocked = blockedTeams.has(team.name);
+                const teamCard = document.createElement('div');
+                teamCard.className = `team-card relative bg-gradient-to-br ${team.colors} rounded-lg p-4 cursor-pointer border-2 border-white/20 hover:border-white/40 ${isBlocked ? 'blocked' : ''}`;
+                teamCard.onclick = () => toggleTeam(team.name);
+                
+                teamCard.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-lg mb-1">${team.country}</div>
+                        <div class="text-xl mb-2">${team.emoji}</div>
+                        <div class="text-white font-bold text-xs leading-tight">${team.name}</div>
+                    </div>
+                `;
+                
+                grid.appendChild(teamCard);
+            });
+
+            updateStats();
+        }
+
+        function toggleTeam(teamName) {
+            if (blockedTeams.has(teamName)) {
+                blockedTeams.delete(teamName);
+            } else {
+                if (blockedTeams.size >= MAX_BLOCKS) {
+                    showMaxBlocksMessage();
+                    return;
+                }
+                blockedTeams.add(teamName);
+            }
+            renderTeams();
+        }
+
+        function updateStats() {
+            document.getElementById('totalTeams').textContent = teams.length;
+            document.getElementById('blockedCount').textContent = `${blockedTeams.size}/${MAX_BLOCKS}`;
+            document.getElementById('availableCount').textContent = teams.length - blockedTeams.size;
+        }
+
+        function clearAllBlocks() {
+            blockedTeams.clear();
+            renderTeams();
+        }
+
+        function showBlockedTeams() {
+            const modal = document.getElementById('blockedModal');
+            const list = document.getElementById('blockedList');
+            
+            list.innerHTML = '';
+            
+            if (blockedTeams.size === 0) {
+                list.innerHTML = '<p class="text-gray-600">No hay equipos bloqueados</p>';
+            } else {
+                Array.from(blockedTeams).forEach(teamName => {
+                    const team = teams.find(t => t.name === teamName);
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center justify-between bg-gray-100 p-2 rounded';
+                    item.innerHTML = `
+                        <span>${team.emoji} ${teamName}</span>
+                        <button onclick="toggleTeam('${teamName}'); showBlockedTeams();" class="text-green-600 hover:text-green-800">
+                            ✅ Desbloquear
+                        </button>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('blockedModal').classList.add('hidden');
+            document.getElementById('blockedModal').classList.remove('flex');
+        }
+
+        function savePreferences() {
+            localStorage.setItem('fanaticbox-blocked-teams', JSON.stringify(Array.from(blockedTeams)));
+            
+            // Show temporary success message
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✅ ¡Guardado!';
+            button.classList.add('bg-green-600');
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('bg-green-600');
+            }, 2000);
+        }
+
+        function loadPreferences() {
+            const saved = localStorage.getItem('fanaticbox-blocked-teams');
+            if (saved) {
+                blockedTeams = new Set(JSON.parse(saved));
+            }
+        }
+
+        function orderBox() {
+            const availableTeams = teams.length - blockedTeams.size;
+            
+            if (availableTeams < 3) {
+                alert('⚠️ Necesitas al menos 3 equipos disponibles para hacer un pedido. Desbloquea algunos equipos.');
+                return;
+            }
+            
+            document.getElementById('successModal').classList.remove('hidden');
+            document.getElementById('successModal').classList.add('flex');
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('successModal').classList.remove('flex');
+        }
+
+        function showMaxBlocksMessage() {
+            // Create temporary message
+            const message = document.createElement('div');
+            message.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300';
+            message.innerHTML = '⚠️ Solo puedes vetar máximo 3 equipos';
+            document.body.appendChild(message);
+            
+            // Animate in
+            setTimeout(() => message.classList.add('translate-x-0'), 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                message.classList.add('translate-x-full');
+                setTimeout(() => document.body.removeChild(message), 300);
+            }, 3000);
+        }
+
+        // Initialize the page
+        loadPreferences();
+        renderTeams();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'991ace6d556301ac',t:'MTc2MDk4NzMzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
